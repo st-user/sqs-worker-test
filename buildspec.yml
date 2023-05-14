@@ -1,0 +1,26 @@
+version: 0.2
+
+phases:
+  install: 
+    runtime-versions:
+      docker: 18
+  pre_build:
+    commands:
+      - REPO_NAME=sqs-worker-test
+      - $(aws ecr get-login --no-include-email --region $AWS_DEFAULT_REGION)
+      - REPO=$(aws ecr describe-repositories --repository-names $REPO_NAME --query 'repositories[0].repositoryUri' --output text)
+      - IMAGE=$REPO:latest
+  build:
+    commands:
+      - docker build -t $IMAGE .
+      - docker push $IMAGE
+  post_build:
+    commands:
+      - echo "In post_build phase"
+      - echo "Image pushed to ECR"
+      - printf '[{"name":"app","imageUri":"%s"}]' $IMAGE > imagedefinitions-worker.json
+
+artifacts:
+  files:
+    - imagedefinitions-worker.json
+
